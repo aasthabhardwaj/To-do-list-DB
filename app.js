@@ -57,9 +57,6 @@ app.get("/", function(req, res) {
     }
 
   });
-
-
-
 });
 
 app.post("/", function(req, res) {
@@ -73,6 +70,19 @@ item.save();
 res.redirect("/");
 
 });
+
+app.post("/delete", function(req, res) {
+  const deletingItem = (req.body.checkbox)
+
+  Item.findByIdAndRemove(deletingItem, function(err){
+    if(!err)
+    {
+      console.log("deleted!");
+      res.redirect("/");
+    }
+  });
+});
+
 
 app.get("/work", function(req, res) {
   res.render("list", {
