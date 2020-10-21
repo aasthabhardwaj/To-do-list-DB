@@ -3,6 +3,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const _ = require("lodash");
+
 
 const app = express();
 
@@ -64,7 +66,8 @@ app.get("/", function(req, res) {
 });
 
 app.get("/:customListName", function(req,res){
-   const customListName = req.params.customListName;
+   const customListName = _.capitalize(req.params.customListName);
+
 List.findOne({name: customListName},function(err,foundList){
   if(!err){
     if(!foundList){
@@ -72,8 +75,9 @@ List.findOne({name: customListName},function(err,foundList){
           name: customListName,
           items: defaultItems
                              });
-         list.save();
+       console.log("new list" + customListName);
          res.redirect("/"+ customListName);
+         list.save();
     }
     else{
             res.render("list",{
@@ -91,25 +95,50 @@ List.findOne({name: customListName},function(err,foundList){
 app.post("/", function(req, res) {
 
   const itemName = req.body.newItem;
+  const listName = req.body.list;
 
   const item = new Item({
     name: itemName
-  })
-item.save();
-res.redirect("/");
+  });
 
+if(listName === "Today"){
+  item.save();
+  res.redirect("/");
+}
+else
+{
+  List.findOne({name: listName},function(err,foundList){
+    foundList.items.push(item);
+    foundList.save();
+    console.log("added in new list");
+    res.redirect("/"+listName);
+  });
+}
 });
 
 app.post("/delete", function(req, res) {
   const deletingItem = (req.body.checkbox)
+  const listName= req.body.listName;
 
-  Item.findByIdAndRemove(deletingItem, function(err){
-    if(!err)
-    {
-      console.log("deleted!");
-      res.redirect("/");
-    }
-  });
+  if(listName === "Today"){
+    Item.findByIdAndRemove(deletingItem, function(err){
+      if(!err)
+      {
+        console.log("deleted from today!");
+        res.redirect("/");
+      }
+    });
+  } else
+  {
+    List.findOneAndUpdate({name:listName},{$pull:{items:{_id:deletingItem}}},function(err,foundList){
+      if(!err){
+        console.log("deleted from" + listName);
+        res.redirect("/"+listName);
+      }
+    })
+  }
+
+
 });
 
 
